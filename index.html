@@ -1,50 +1,197 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Free Image Hosting</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: sans-serif; background: #f0f0f0; padding: 20px; }
-    .box { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    h2 { text-align: center; }
-    input[type="file"] { width: 100%; margin: 10px 0; }
-    button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 6px; }
-    textarea { width: 100%; height: 100px; margin-top: 10px; font-family: monospace; }
-    img { max-width: 100%; margin-top: 10px; border-radius: 6px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile-Friendly Image Uploader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            box-sizing: border-box;
+        }
+        h2 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        input[type="file"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        input[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        .message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .image-display {
+            margin-top: 30px;
+            text-align: center;
+            width: 100%;
+        }
+        .image-display img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .image-display p {
+            margin-top: 15px;
+            font-size: 1.1em;
+            color: #555;
+            word-wrap: break-word; /* Long URLs */
+        }
+        /* Mobile adjustments */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="box">
-    <h2>📷 Upload Image</h2>
-    <form id="uploadForm">
-      <input type="file" name="image" required />
-      <button type="submit">Upload</button>
-    </form>
-    <textarea id="urlBox" readonly placeholder="Image URL will appear here..."></textarea>
-    <img id="preview" style="display:none;" />
-  </div>
+    <div class="container">
+        <h2>अपनी इमेज अपलोड करें</h2>
 
-  <script>
-    document.getElementById('uploadForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const formData = new FormData(this);
-
-      fetch('upload.php', {
-        method: 'POST',
-        body: formData
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          document.getElementById('urlBox').value = data.url;
-          document.getElementById('preview').src = data.url;
-          document.getElementById('preview').style.display = 'block';
-        } else {
-          alert("Upload failed: " + data.error);
+        <?php
+        // PHP कोड यहीं से शुरू होता है
+        $uploadDirectory = 'uploads/'; // वह डायरेक्टरी जहाँ इमेज सेव होंगी
+        
+        // सुनिश्चित करें कि अपलोड डायरेक्टरी मौजूद है, यदि नहीं तो बनाएं
+        if (!is_dir($uploadDirectory)) {
+            mkdir($uploadDirectory, 0755, true);
         }
-      })
-      .catch(() => alert("Network error"));
-    });
-  </script>
+
+        $message = '';
+        $uploadedImageUrl = '';
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['image'])) {
+            $file = $_FILES['image'];
+
+            // फ़ाइल अपलोड एरर चेक करें
+            if ($file['error'] !== UPLOAD_ERR_OK) {
+                switch ($file['error']) {
+                    case UPLOAD_ERR_INI_SIZE:
+                    case UPLOAD_ERR_FORM_SIZE:
+                        $message = '<p class="message error">अपलोड की गई फ़ाइल बहुत बड़ी है।</p>';
+                        break;
+                    case UPLOAD_ERR_PARTIAL:
+                        $message = '<p class="message error">फ़ाइल आंशिक रूप से ही अपलोड हुई।</p>';
+                        break;
+                    case UPLOAD_ERR_NO_FILE:
+                        $message = '<p class="message error">कोई फ़ाइल अपलोड नहीं की गई।</p>';
+                        break;
+                    case UPLOAD_ERR_NO_TMP_DIR:
+                        $message = '<p class="message error">टेम्पररी फोल्डर मिसिंग है।</p>';
+                        break;
+                    case UPLOAD_ERR_CANT_WRITE:
+                        $message = '<p class="message error">डिस्क पर फ़ाइल को सेव नहीं कर सकता।</p>';
+                        break;
+                    case UPLOAD_ERR_EXTENSION:
+                        $message = '<p class="message error">PHP एक्सटेंशन ने अपलोड को रोक दिया।</p>';
+                        break;
+                    default:
+                        $message = '<p class="message error">अनजान अपलोड एरर।</p>';
+                        break;
+                }
+            } else {
+                // फ़ाइल के प्रकार (MIME टाइप) को वैलिडेट करें
+                $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mimeType = finfo_file($finfo, $file['tmp_name']);
+                finfo_close($finfo);
+
+                if (!in_array($mimeType, $allowedMimeTypes)) {
+                    $message = '<p class="message error">केवल JPG, PNG, GIF, और WebP इमेज ही अपलोड की जा सकती हैं।</p>';
+                } else {
+                    // फ़ाइल का नाम साफ़ करें और एक यूनिक नाम बनाएं
+                    $fileName = basename($file['name']);
+                    $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+                    $newFileName = uniqid('img_', true) . '.' . $fileExtension; // एक यूनिक नाम
+                    $destination = $uploadDirectory . $newFileName;
+
+                    // फ़ाइल को टेम्पररी लोकेशन से परमानेंट लोकेशन पर ले जाएं
+                    if (move_uploaded_file($file['tmp_name'], $destination)) {
+                        $message = '<p class="message success">इमेज सफलतापूर्वक अपलोड हुई!</p>';
+                        // अपलोड की गई इमेज का URL जेनरेट करें
+                        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+                        $host = $_SERVER['HTTP_HOST'];
+                        $uploadedImageUrl = $protocol . '://' . $host . '/' . $destination;
+                    } else {
+                        $message = '<p class="message error">इमेज अपलोड करने में एरर आई।</p>';
+                    }
+                }
+            }
+        }
+        // PHP कोड यहीं खत्म होता है
+        ?>
+
+        <?php echo $message; // अपलोड मैसेज डिस्प्ले करें ?>
+
+        <form action="" method="post" enctype="multipart/form-data">
+            <label for="image">इमेज चुनें:</label>
+            <input type="file" name="image" id="image" accept="image/jpeg, image/png, image/gif, image/webp" required>
+            <input type="submit" value="अपलोड करें">
+        </form>
+    </div>
+
+    <?php if ($uploadedImageUrl): // यदि इमेज अपलोड हुई है, तो उसे डिस्प्ले करें ?>
+        <div class="image-display">
+            <h3>आपकी अपलोड की गई इमेज:</h3>
+            <img src="<?php echo htmlspecialchars($uploadedImageUrl); ?>" alt="Uploaded Image">
+            <p><strong>इमेज लिंक:</strong> <br> <input type="text" value="<?php echo htmlspecialchars($uploadedImageUrl); ?>" onclick="this.select();" readonly style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-top: 5px;"></p>
+        </div>
+    <?php endif; ?>
+
 </body>
 </html>
