@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Free Image Hosting</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: sans-serif; background: #f0f0f0; padding: 20px; }
+    .box { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    h2 { text-align: center; }
+    input[type="file"] { width: 100%; margin: 10px 0; }
+    button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 6px; }
+    textarea { width: 100%; height: 100px; margin-top: 10px; font-family: monospace; }
+    img { max-width: 100%; margin-top: 10px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>📷 Upload Image</h2>
+    <form id="uploadForm">
+      <input type="file" name="image" required />
+      <button type="submit">Upload</button>
+    </form>
+    <textarea id="urlBox" readonly placeholder="Image URL will appear here..."></textarea>
+    <img id="preview" style="display:none;" />
+  </div>
+
+  <script>
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+
+      fetch('upload.php', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('urlBox').value = data.url;
+          document.getElementById('preview').src = data.url;
+          document.getElementById('preview').style.display = 'block';
+        } else {
+          alert("Upload failed: " + data.error);
+        }
+      })
+      .catch(() => alert("Network error"));
+    });
+  </script>
+</body>
+</html>
